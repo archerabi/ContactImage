@@ -16,9 +16,11 @@ class FApi : public QObject
         explicit FApi(QObject *parent = 0);
         void getImage(QString id,QString accessToken);
         void getFBContacts(QString);
+
+        bool isConnected();
     signals:
         void fbContactsFetched(QList<Friend*>*);
-        void imageRecieved(QImage*);
+        void imageRecieved(QImage*,QString);
         void imageLoading();
     public slots:
         void readReply(QNetworkReply*);
@@ -27,6 +29,7 @@ class FApi : public QObject
 
         QNetworkAccessManager* iNetManager;
         QImage* image;
+        QScriptEngine* engine;
         int callingNow;
         enum ECall
         {

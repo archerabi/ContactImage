@@ -12,6 +12,8 @@
 #include <QProgressDialog>
 #include "fbfriendsmodel.h"
 
+#include <QSortFilterProxyModel>
+
 class FApi;
 namespace Ui {
     class MainWindow;
@@ -36,13 +38,14 @@ class MainWindow : public QMainWindow
         void phoneContactClicked(QModelIndex);
         void fbFriendClicked(QModelIndex);
 
-        void loadImage(QImage*);
+        void loadImage(QImage*,QString imageName);
         void sync();
+        void backToPhoneContacts();
     private:
         Ui::MainWindow *ui;
 
         QVBoxLayout* iLayout;
-        SlidingStackedWidget* iStackedWidget;
+        SlidingStackedWidget* stackedWidget;
         QListView* iListView;
         QWebView* iWebView;
 
@@ -60,6 +63,10 @@ class MainWindow : public QMainWindow
 
         QListView* fbListView;
 
+        QSortFilterProxyModel* contactSortModel;
+        QSortFilterProxyModel* fbSortModel;
+
+        QString currentImageName;
 };
 
 #endif // MAINWINDOW_H

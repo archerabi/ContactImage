@@ -1,5 +1,7 @@
 #include "contactmanager.h"
 #include <QPixmap>
+#include <QFile>
+#include <QDebug>
 ContactModel::ContactModel(QObject *parent) :
     QAbstractListModel(parent)
 {
@@ -41,14 +43,29 @@ void ContactModel::readContacts()
     emit endInsertRows();
 }
 
-void ContactModel::setThumbnail(int index,const QPixmap* pic)
+void ContactModel::setAvatar(int index,const QPixmap* pic,QString imageName)
 {
+     QFile file("E:/"+imageName);
+     file.open(QIODevice::WriteOnly);
+     pic->save(&file);
+     file.close();
+
     QContactManager cm;
     QContact contact = iContactList->at(index);
-    QContactThumbnail t = contact.detail<QContactThumbnail>();
+
+    contact = cm.compatibleContact(contact);
+
+    QContactAvatar av = contact.detail(QContactAvatar::DefinitionName);
+    av.setImageUrl(QUrl("E:/"+imageName));
+    qDebug() << "contact.savedetail" << contact.saveDetail(&av);
+
+    QContactThumbnail t = contact.detail(QContactThumbnail::DefinitionName);
+    pic->scaled(QSize(80,80),Qt::KeepAspectRatio,Qt::SmoothTransformation);
     t.setThumbnail(pic->toImage());
-    contact.saveDetail(&t);
-    cm.saveContact(&contact);
+    qDebug() << "contact.savedetail" << contact.saveDetail(&t);
 
 
+
+    qDebug() << "cm.savecontact" << cm.saveContact(&contact);
+     qDebug() << cm.error();
 }

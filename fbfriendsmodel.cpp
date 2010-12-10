@@ -1,5 +1,5 @@
 #include "fbfriendsmodel.h"
-
+#include <QDebug>
 FBFriendsModel::FBFriendsModel(QObject *parent) :
     QAbstractListModel(parent)
 {
@@ -15,23 +15,27 @@ int FBFriendsModel::rowCount ( const QModelIndex & parent  ) const
 QVariant FBFriendsModel::data ( const QModelIndex & index, int role ) const
 {
     Friend* fr = iFriendList->at(index.row());
+
     switch(role)
     {
         case Qt::DisplayRole:
             return fr->getFirstName()+ " " + fr->getLastName();
             break;
     }
+    return QVariant();
 }
 
 void FBFriendsModel::add(QList<Friend*>* list)
 {
-    emit beginInsertRows(QModelIndex(),iFriendList->count(),list->count());
-    foreach(Friend* f,*list)
+
+   int i=0;
+   emit beginInsertRows(QModelIndex(),iFriendList->count(),
+                        iFriendList->count()+list->count()-1);
+   foreach(Friend* f,*list)
     {
         iFriendList->append(f);
     }
-
-    emit endInsertRows();
+   emit endInsertRows();
 }
 
 Friend* FBFriendsModel::getFriendAt(int index)

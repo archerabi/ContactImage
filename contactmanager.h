@@ -19,7 +19,7 @@ class ContactModel : public QAbstractListModel
 
         int rowCount ( const QModelIndex & parent = QModelIndex() ) const;
         QVariant data ( const QModelIndex & index, int role = Qt::DisplayRole ) const;
-        void setThumbnail(int index,const QPixmap* pic);
+        void setAvatar(int index,const QPixmap* pic,QString imageName);
     signals:
         void ready();
     private slots:

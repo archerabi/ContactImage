@@ -22,6 +22,7 @@ FApi::FApi(QObject *parent) :
     connect(iNetManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(readReply(QNetworkReply*)));
 
     image = new QImage();
+    engine = new QScriptEngine(this);
 }
 
 void FApi::getImage(QString id,QString accessToken)
@@ -54,22 +55,26 @@ void FApi::readReply(QNetworkReply* aReply)
         if(callingNow == E_FRIENDS)
         {
             QString reply = aReply->readAll();
-
-            QScriptEngine engine;
-            QScriptValue val = engine.evaluate("(" + reply + ")" );
+            QScriptValue val = engine->evaluate("(" + reply + ")" );
             QList<Friend*>* list = extractFriends(val);
 
             emit fbContactsFetched(list);
         }
         else
         {
-
             QByteArray array = aReply->readAll();
             qDebug() << array;
             image->loadFromData(array);
 
-            emit imageRecieved(image);
 
+            QString string = aReply->url().toString();
+
+            int i=string.length()-1;
+            while(string.at(i)!= '/')
+            {
+                i--;
+            }
+            emit imageRecieved(image,string.right(string.length()-i-1));
         }
     }
 
@@ -101,4 +106,9 @@ QList<Friend*>* FApi::extractFriends(QScriptValue& value)
         }
     qDebug() << "Fetched " << list->count() << " friends";
     return list;
+}
+
+bool FApi::isConnected()
+{
+
 }
