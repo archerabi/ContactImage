@@ -30,7 +30,7 @@ void Synchronizer::setAvatar(QContactManager* cm,QContact aContact,const QPixmap
 {
      QFile file(KImageStorageFolder+imageName);
      file.open(QIODevice::WriteOnly);
-     pic->save(&file);
+     pic->save(&file,"JPG");
      file.close();
 
     QContact contact = cm->compatibleContact(aContact);
@@ -62,6 +62,10 @@ QString Synchronizer::serialize()
 }
 void Synchronizer::saveLinks(QString string)
 {
+    if(QFile::exists(KImageStorageFolder+"links.txt"))
+    {
+        QFile::remove(KImageStorageFolder+"links.txt");
+    }
     QFile file(KImageStorageFolder+"links.txt");
     file.open(QIODevice::WriteOnly);
     file.write(QByteArray().append(string));
