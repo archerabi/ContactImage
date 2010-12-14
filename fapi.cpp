@@ -76,6 +76,7 @@ void FApi::readReply(QNetworkReply* aReply)
             }
             string = string.right(string.length()-i-1);
 //            emit filename without the extension
+//            emit imageRecieved(image,string);
             emit imageRecieved(image,string.left(string.length()-4));
         }
     }
@@ -105,6 +106,7 @@ QList<Friend*>* FApi::extractFriends(QScriptValue& value)
                  fr->setId(it.value().property("id").toString());
                  *list << fr;
              }
+             list->removeLast();
         }
     qDebug() << "Fetched " << list->count() << " friends";
     return list;
