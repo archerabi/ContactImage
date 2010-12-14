@@ -164,13 +164,13 @@ void MainWindow::initFBFriendsListView()
     fbSortModel->sort(0);
     fbSortModel->setDynamicSortFilter(true);
 
-        iSyncButton = new QPushButton("Sync Image",this);
-        iSyncButton->setEnabled(false);
-        iSyncButton->setFont(QFont("serif",6));
-        iSyncButton->setMinimumSize(QSize(64,64));
+        syncButton = new QPushButton("Sync Image",this);
+        syncButton->setEnabled(false);
+        syncButton->setFont(QFont("serif",6));
+        syncButton->setMinimumSize(QSize(64,64));
 
        hlayout->addWidget(image);
-       hlayout->addWidget(iSyncButton);
+       hlayout->addWidget(syncButton);
 
     layout->addWidget(backButton);
     layout->addWidget(infoLabel);
@@ -182,7 +182,7 @@ void MainWindow::initFBFriendsListView()
 
     stackedWidget->addWidget(widget);
     connect(fbListView,SIGNAL(clicked(QModelIndex)),this,SLOT(fbFriendClicked(QModelIndex)));
-    connect(iSyncButton,SIGNAL(clicked()),this,SLOT(sync()));
+    connect(syncButton,SIGNAL(clicked()),this,SLOT(sync()));
     connect(backButton,SIGNAL(clicked()),this,SLOT(backToPhoneContacts()));
 }
 
@@ -213,7 +213,7 @@ void MainWindow::fbFriendClicked(QModelIndex aindex)
 void MainWindow::loadImage(QImage* aImage,QString imageName)
 {
     currentImageName = imageName;
-    iSyncButton->setEnabled(true);
+    syncButton->setEnabled(true);
     QPixmap pixmap =QPixmap::fromImage(*aImage);
 
     pixmap.scaled(QSize(360,200),Qt::KeepAspectRatio);
@@ -222,7 +222,7 @@ void MainWindow::loadImage(QImage* aImage,QString imageName)
 
 void MainWindow::loadingImage()
 {
-    iSyncButton->setEnabled(false);
+    syncButton->setEnabled(false);
 }
 
 void MainWindow::sync()
@@ -235,6 +235,8 @@ void MainWindow::sync()
         synchronizer->setAvatar(&cm,c,image->pixmap(),currentImageName);
         synchronizer->connectProfile(c,fbModel->getFriendAt(fbIndex)->getId());
         synchronizer->saveLinks(synchronizer->serialize());
+        syncButton->setText("Synced");
+        syncButton->setEnabled(false);
     }
 
 }

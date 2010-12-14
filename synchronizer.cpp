@@ -14,7 +14,6 @@ Synchronizer::Synchronizer(QObject *parent) :
 {
     QDir dir(KImageStorageFolder);
     dir.mkdir(KImageStorageFolder);
-
 }
 
 void Synchronizer::connectProfile(QContact contact,QString fbFriendId)

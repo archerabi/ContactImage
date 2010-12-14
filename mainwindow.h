@@ -58,7 +58,7 @@ class MainWindow : public QMainWindow
         QProgressDialog* msgbox;
         FApi* api;
 
-        QPushButton* iSyncButton;
+        QPushButton* syncButton;
         QLabel* image ;
 
         QListView* fbListView;
