@@ -32,10 +32,14 @@ MainWindow::MainWindow(QWidget *parent) :
     iVLayout->addWidget(iInfoLabel);
     iVLayout->addWidget(iAuthFBButton);
 
-    iModel =new ContactModel(this);
+    synchronizer = new Synchronizer(this);
+    synchronizer->readLinks();
+
+    contactsModel =new ContactModel(this);
+    contactsModel->readContacts(&cm);
     contactSortModel = new QSortFilterProxyModel(this);
     contactSortModel->setSortCaseSensitivity(Qt::CaseInsensitive);
-    contactSortModel->setSourceModel(iModel);
+    contactSortModel->setSourceModel(contactsModel);
     contactSortModel->sort(0);
 
     iListView = new QListView;
@@ -81,7 +85,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     connect(this->iAuthFBButton,SIGNAL(clicked()),this,SLOT(startFBAuth()));
-    connect(api,SIGNAL(fbContactsFetched(QList<Friend*>*)),iFbModel,SLOT(add(QList<Friend*>*)));
+    connect(api,SIGNAL(fbContactsFetched(QList<Friend*>*)),fbModel,SLOT(add(QList<Friend*>*)));
        connect(iListView,SIGNAL(clicked(QModelIndex)),this,SLOT(phoneContactClicked(QModelIndex)));
     msgbox = new QProgressDialog(this);
 
@@ -148,19 +152,22 @@ void MainWindow::initFBFriendsListView()
     fbListView = new QListView(this);
     fbListView->setMinimumSize(QSize(360,240));
     fbListView->setVerticalScrollMode(QListView::ScrollPerPixel);;
+    fbListView->setFont(QFont("serif",5));;
 
     QsKineticScroller* scroller = new QsKineticScroller(this);
     scroller->enableKineticScrollFor(fbListView);
 
-    iFbModel = new FBFriendsModel(this);
+    fbModel = new FBFriendsModel(this);
     fbSortModel = new QSortFilterProxyModel(this);
     fbSortModel->setSortCaseSensitivity(Qt::CaseInsensitive);
-    fbSortModel->setSourceModel(iFbModel);
+    fbSortModel->setSourceModel(fbModel);
     fbSortModel->sort(0);
     fbSortModel->setDynamicSortFilter(true);
 
         iSyncButton = new QPushButton("Sync Image",this);
         iSyncButton->setEnabled(false);
+        iSyncButton->setFont(QFont("serif",6));
+        iSyncButton->setMinimumSize(QSize(64,64));
 
        hlayout->addWidget(image);
        hlayout->addWidget(iSyncButton);
@@ -200,7 +207,7 @@ void MainWindow::fbFriendClicked(QModelIndex aindex)
 {
     QSettings settings("Trishul", "contactimage");
     int fbIndex = fbSortModel->mapToSource(fbListView->currentIndex()).row();
-    api->getImage(iFbModel->getFriendAt(fbIndex)->getId(),
+    api->getImage(fbModel->getFriendAt(fbIndex)->getId(),
                   settings.value("access_token").toString());
 }
 void MainWindow::loadImage(QImage* aImage,QString imageName)
@@ -222,8 +229,12 @@ void MainWindow::sync()
 {
     int contactindex = contactSortModel->mapToSource(iListView->currentIndex()).row();
     int fbIndex = fbSortModel->mapToSource(fbListView->currentIndex()).row();
+    QContact c = contactsModel->getContactAt(contactindex);
     if(contactindex > 0 && fbIndex > 0)
     {
-        iModel->setAvatar(contactindex,image->pixmap(),currentImageName);
+        synchronizer->setAvatar(&cm,c,image->pixmap(),currentImageName);
+        synchronizer->connectProfile(c,fbModel->getFriendAt(fbIndex)->getId());
+        synchronizer->saveLinks(synchronizer->serialize());
     }
+
 }

@@ -1,18 +1,16 @@
 #include "contactmanager.h"
-#include <QPixmap>
-#include <QFile>
-#include <QDebug>
+
+
+
 ContactModel::ContactModel(QObject *parent) :
     QAbstractListModel(parent)
 {
-    iContactList = new QList<QContact>();
-    connect(this,SIGNAL(ready()),this,SLOT(readContacts()));
-    emit ready();
+    contactList = new QList<QContact>();
 }
 
 int ContactModel::rowCount ( const QModelIndex & parent ) const
 {
-    return iContactList->count();
+    return contactList->count();
 }
 
 QVariant ContactModel::data ( const QModelIndex & index, int role ) const
@@ -21,51 +19,32 @@ QVariant ContactModel::data ( const QModelIndex & index, int role ) const
     {
         case Qt::DisplayRole:
             QString name;
-            name+=iContactList->at(index.row()).detail<QContactName>().firstName();
-            name+=" ";
-            name+=iContactList->at(index.row()).detail<QContactName>().lastName();
+            name+=contactList->at(index.row()).detail<QContactName>().firstName();
+            if(name.length()>0)
+                name+=" ";
+            name+=contactList->at(index.row()).detail<QContactName>().lastName();
             return name;
 
     }
     return QVariant();
 }
 
-void ContactModel::readContacts()
+void ContactModel::readContacts(QContactManager* cm)
 {
-    QContactManager cm;
-    QList<QContact> allContacts = cm.contacts();
+
+    QList<QContact> allContacts = cm->contacts();
 
     emit beginInsertRows(QModelIndex(),0,allContacts.count());
     foreach(QContact contact,allContacts)
     {
-        iContactList->append(contact);
+        contactList->append(contact);
     }
     emit endInsertRows();
 }
 
-void ContactModel::setAvatar(int index,const QPixmap* pic,QString imageName)
+QContact ContactModel::getContactAt(int index)
 {
-     QFile file("E:/"+imageName);
-     file.open(QIODevice::WriteOnly);
-     pic->save(&file);
-     file.close();
-
-    QContactManager cm;
-    QContact contact = iContactList->at(index);
-
-    contact = cm.compatibleContact(contact);
-
-    QContactAvatar av = contact.detail(QContactAvatar::DefinitionName);
-    av.setImageUrl(QUrl("E:/"+imageName));
-    qDebug() << "contact.savedetail" << contact.saveDetail(&av);
-
-    QContactThumbnail t = contact.detail(QContactThumbnail::DefinitionName);
-    pic->scaled(QSize(80,80),Qt::KeepAspectRatio,Qt::SmoothTransformation);
-    t.setThumbnail(pic->toImage());
-    qDebug() << "contact.savedetail" << contact.saveDetail(&t);
-
-
-
-    qDebug() << "cm.savecontact" << cm.saveContact(&contact);
-     qDebug() << cm.error();
+    if(index >= contactList->count() || index < 0)
+        return QContact();
+    return contactList->at(index);
 }

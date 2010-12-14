@@ -74,7 +74,9 @@ void FApi::readReply(QNetworkReply* aReply)
             {
                 i--;
             }
-            emit imageRecieved(image,string.right(string.length()-i-1));
+            string = string.right(string.length()-i-1);
+//            emit filename without the extension
+            emit imageRecieved(image,string.left(string.length()-4));
         }
     }
 

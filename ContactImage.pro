@@ -25,7 +25,8 @@ SOURCES += main.cpp\
     friend.cpp \
     fbfriendsmodel.cpp \
     scrollingComponents/SignalGuard/SignalGuard.cpp \
-    scrollingComponents/QsWidgets/QsKineticScroller.cpp
+    scrollingComponents/QsWidgets/QsKineticScroller.cpp \
+    synchronizer.cpp
 
 HEADERS  += mainwindow.h \
     fapi.h \
@@ -34,7 +35,8 @@ HEADERS  += mainwindow.h \
     friend.h \
     fbfriendsmodel.h \
     scrollingComponents/QsWidgets/QsKineticScroller.h \
-    scrollingComponents/SignalGuard/SignalGuard.h
+    scrollingComponents/SignalGuard/SignalGuard.h \
+    synchronizer.h
 
 
 FORMS    += mainwindow.ui

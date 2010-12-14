@@ -11,7 +11,7 @@
 #include "contactmanager.h"
 #include <QProgressDialog>
 #include "fbfriendsmodel.h"
-
+#include "synchronizer.h"
 #include <QSortFilterProxyModel>
 
 class FApi;
@@ -49,8 +49,8 @@ class MainWindow : public QMainWindow
         QListView* iListView;
         QWebView* iWebView;
 
-        ContactModel* iModel;
-        FBFriendsModel* iFbModel;
+        ContactModel* contactsModel;
+        FBFriendsModel* fbModel;
 
         QLabel* iInfoLabel;
         QPushButton* iAuthFBButton;
@@ -67,6 +67,9 @@ class MainWindow : public QMainWindow
         QSortFilterProxyModel* fbSortModel;
 
         QString currentImageName;
+        Synchronizer* synchronizer;
+
+        QContactManager cm;
 };
 
 #endif // MAINWINDOW_H
