@@ -13,18 +13,22 @@ class FApi : public QObject
 {
     Q_OBJECT
     public:
-        explicit FApi(QObject *parent = 0);
-        void getImage(QString id,QString accessToken);
-        void getFBContacts(QString);
+        int getImage(QString id,QString accessToken);
+        int getFBContacts(QString);
 
         bool isConnected();
+        static FApi* Instance();
     signals:
         void fbContactsFetched(QList<Friend*>*);
-        void imageRecieved(QImage*,QString);
+        void imageRecieved(QImage*,QString,int Token);
         void imageLoading();
+        void displayImageName(QString);
     public slots:
         void readReply(QNetworkReply*);
+        int downloadImage(QString url);
     private:
+        QString stripExtensionFromUrl(QString);
+        explicit FApi(QObject *parent = 0);
         QList<Friend*>* extractFriends(QScriptValue&);
 
         QNetworkAccessManager* iNetManager;
@@ -36,6 +40,8 @@ class FApi : public QObject
             E_FRIENDS,
             E_IMAGE
         };
+
+        static FApi* instance;
 
 };
 

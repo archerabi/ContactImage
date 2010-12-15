@@ -28,26 +28,30 @@ class MainWindow : public QMainWindow
         ~MainWindow();
 
     private:
-        void initPhoneContactListView();
         void initFBFriendsListView();
     private slots:
         void loadingImage();
         void startFBAuth();
-        void showAuthPage(bool);
+        void finishedLoadingFBAuthPage(bool);
         void  urlChanged(QUrl);
         void phoneContactClicked(QModelIndex);
         void fbFriendClicked(QModelIndex);
 
-        void loadImage(QImage*,QString imageName);
+        void loadImage(QImage*,QString imageName,int token);
+        void gotImageName(QString);
+
         void sync();
         void backToPhoneContacts();
+
+        void initMainScreen();
+        QWidget* getAuthPage();
     private:
         Ui::MainWindow *ui;
 
-        QVBoxLayout* iLayout;
+
         SlidingStackedWidget* stackedWidget;
         QListView* iListView;
-        QWebView* iWebView;
+        QWebView* webView;
 
         ContactModel* contactsModel;
         FBFriendsModel* fbModel;
@@ -70,6 +74,10 @@ class MainWindow : public QMainWindow
         Synchronizer* synchronizer;
 
         QContactManager cm;
+        QLabel* webViewStatus;
+
+        QPushButton* syncAllButton;
+        QProgressBar* syncAllProgress;
 };
 
 #endif // MAINWINDOW_H

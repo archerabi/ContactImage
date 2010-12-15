@@ -3,22 +3,28 @@
 #include <QFile>
 #include <QDebug>
 #include <QDir>
-
+#include "fapi.h"
+#include "fbfriendsmodel.h"
+#include "contactmanager.h"
 const QChar token=';';
 const QString subToken=",";
 
 const QString KImageStorageFolder = "E:/Images/ContactImage/";
 
-Synchronizer::Synchronizer(QObject *parent) :
+Synchronizer::Synchronizer(FBFriendsModel* aFbModel,ContactModel* aContactModel,
+                           QContactManager* aContactManager,QObject *parent) :
     QObject(parent)
 {
     QDir dir(KImageStorageFolder);
     dir.mkdir(KImageStorageFolder);
-
+    fbModel = aFbModel;
+    contactModel = aContactModel;
+    cm = aContactManager;
 }
 
-void Synchronizer::connectProfile(QContact contact,QString fbFriendId)
+void Synchronizer::connectProfile(int contactIndex,QString fbFriendId)
 {
+    QContact contact = contactModel->getContactAt(contactIndex);
     QContactName name=contact.detail(QContactName::DefinitionName);
     if(name.firstName().length() > 0)
         profileMap.insert(name.firstName() + " " + name.lastName() ,fbFriendId);
@@ -26,15 +32,16 @@ void Synchronizer::connectProfile(QContact contact,QString fbFriendId)
         profileMap.insert(name.lastName() ,fbFriendId);
 }
 
-void Synchronizer::setAvatar(QContactManager* cm,QContact aContact,const QPixmap* pic,QString imageName)
+void Synchronizer::setAvatar(int contactIndex,const QPixmap* pic,QString imageName)
 {
-     QFile file(KImageStorageFolder+imageName);
-     file.open(QIODevice::WriteOnly);
-     pic->save(&file,"JPG");
-     file.close();
+    QFile file(KImageStorageFolder+imageName);
+    file.open(QIODevice::WriteOnly);
+    pic->save(&file,"JPG");
+    file.close();
 
-    QContact contact = cm->compatibleContact(aContact);
+    QContact contact = contactModel->getContactAt(contactIndex);
 
+//    QContact contact = cm->compatibleContact(aContact);
     QContactAvatar av = contact.detail(QContactAvatar::DefinitionName);
     av.setImageUrl(QUrl(KImageStorageFolder+imageName));
     qDebug() << "contact.savedetail" << contact.saveDetail(&av);
@@ -45,7 +52,7 @@ void Synchronizer::setAvatar(QContactManager* cm,QContact aContact,const QPixmap
     qDebug() << "contact.savedetail" << contact.saveDetail(&t);
 
     qDebug() << "cm.savecontact" << cm->saveContact(&contact);
-     qDebug() << cm->error();
+    qDebug() << cm->error();
 }
 
 QString Synchronizer::serialize()
@@ -95,5 +102,26 @@ void Synchronizer::readLinks()
             profileMap.insert(contact,fbFriendId);
             prevTokenIndex=ptr;
         }
+    }
+}
+
+void Synchronizer::syncContactImages()
+{
+    connect(FApi::Instance(),SIGNAL(imageRecieved(QImage*,QString,int)),this,SLOT(loadImage(QImage*,QString,int)));
+    QMapIterator<QString, QString> i(profileMap);
+    synced=0;
+    while (i.hasNext())
+    {
+        i.next();
+        int token = FApi::Instance()->getImage(i.value(),"");
+        replyMap.insert(token,i.key());
+    }
+}
+
+void Synchronizer::loadImage(QImage*image,QString string,int token)
+{
+    if(replyMap.contains(token))
+    {
+
     }
 }
