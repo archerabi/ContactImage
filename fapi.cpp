@@ -106,7 +106,7 @@ QList<Friend*>* FApi::extractFriends(QScriptValue& value)
                  fr->setId(it.value().property("id").toString());
                  *list << fr;
              }
-             list->removeLast();
+
         }
     qDebug() << "Fetched " << list->count() << " friends";
     return list;

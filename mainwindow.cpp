@@ -81,8 +81,24 @@ MainWindow::MainWindow(QWidget *parent) :
     {
 
     }
-    setCentralWidget(stackedWidget);
 
+    adLabel = new SmaatoAdLabel(this);
+    adLabel->setFixedSize(300,50);
+
+    adLabel->setAdSpaceIdAndPublisherId(65735725 , 923832245);
+    adLabel->setWidth(300);
+    adLabel->setHeight(50);
+    adLabel->setAutoGPS(true);
+    adLabel->setKeywords("facebook,friends,nokia,ovi");
+
+    adLabel->setSearchString("beyonce,ringtones,tech");
+
+    QWidget* mainwidget = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->addWidget(stackedWidget);
+    layout->addWidget(adLabel);
+    mainwidget->setLayout(layout);
+    setCentralWidget(mainwidget);
 
     connect(this->iAuthFBButton,SIGNAL(clicked()),this,SLOT(startFBAuth()));
     connect(api,SIGNAL(fbContactsFetched(QList<Friend*>*)),fbModel,SLOT(add(QList<Friend*>*)));
@@ -92,6 +108,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(api,SIGNAL(imageRecieved(QImage*,QString)),this,SLOT(loadImage(QImage*,QString)));
     connect(api,SIGNAL(imageLoading()),this,SLOT(loadingImage()));
 
+    connect(adLabel, SIGNAL(smaatoAdError(int)),
+                this, SLOT(smaatoAdErrorSlot(int)));
+
+    int requestBannerErrorCode = adLabel->requestBannerAd(SmaatoAdConstants::EAdTypeImage);
+    qDebug() << "ad error " << requestBannerErrorCode;
 }
 
 MainWindow::~MainWindow()
@@ -239,4 +260,14 @@ void MainWindow::sync()
         syncButton->setEnabled(false);
     }
 
+}
+
+void MainWindow::smaatoAdErrorSlot(int errorCode)
+{
+    qDebug() << "Errorcode " << errorCode;
+    // 42 is an acceptible response from the server to indicate no Ad was found, so don't show an alert in our example application
+    if (errorCode != 42)
+    {
+//        displayErrorNote(errorCode);
+    }
 }

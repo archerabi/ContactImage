@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui webkit network script
+QT       += core gui webkit network script xml
 
 TARGET = ContactImage
 TEMPLATE = app
@@ -28,6 +28,7 @@ SOURCES += main.cpp\
     scrollingComponents/QsWidgets/QsKineticScroller.cpp \
     synchronizer.cpp
 
+
 HEADERS  += mainwindow.h \
     fapi.h \
     SlidingStackedWidget.h \
@@ -44,18 +45,19 @@ FORMS    += mainwindow.ui
 CONFIG += mobility
 MOBILITY = contacts
 
+include(./smaatoadsdk/smaatoadsdk.pri)
+
 symbian {
-    TARGET.UID3 = 0xe016bc7d
-    TARGET.CAPABILITY += NetworkServices ReadDeviceData ReadUserData WriteUserData
+    TARGET.UID3 = 0x200387D3
+    TARGET.CAPABILITY += NetworkServices ReadDeviceData ReadUserData WriteUserData Location SwEvent
     TARGET.EPOCSTACKSIZE = 0x14000
     TARGET.EPOCHEAPSIZE = 0x020000 0x1600000
-    MMP_RULES -= PAGED
-    MMP_RULES += UNPAGED
+    DEPLOYMENT.installer_header = 0x2002CCCF
+    #MMP_RULES -= PAGED
+    #MMP_RULES += UNPAGED
 }
 
-OTHER_FILES += \
-    scrollingComponents/QsLog/QsLog.pri \
-    scrollingComponents/QsLog/log_example.pro
+OTHER_FILES +=
 
 RESOURCES += \
     resource.qrc

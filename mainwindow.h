@@ -14,6 +14,8 @@
 #include "synchronizer.h"
 #include <QSortFilterProxyModel>
 
+#include "SmaatoAdSDK/smaatoadlabel.h"
+
 class FApi;
 namespace Ui {
     class MainWindow;
@@ -41,6 +43,7 @@ class MainWindow : public QMainWindow
         void loadImage(QImage*,QString imageName);
         void sync();
         void backToPhoneContacts();
+        void smaatoAdErrorSlot(int errorCode);
     private:
         Ui::MainWindow *ui;
 
@@ -70,6 +73,8 @@ class MainWindow : public QMainWindow
         Synchronizer* synchronizer;
 
         QContactManager cm;
+
+        SmaatoAdLabel* adLabel;
 };
 
 #endif // MAINWINDOW_H
