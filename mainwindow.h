@@ -14,8 +14,6 @@
 #include "synchronizer.h"
 #include <QSortFilterProxyModel>
 
-#include "SmaatoAdSDK/smaatoadlabel.h"
-
 class FApi;
 namespace Ui {
     class MainWindow;
@@ -30,27 +28,31 @@ class MainWindow : public QMainWindow
         ~MainWindow();
 
     private:
-        void initPhoneContactListView();
         void initFBFriendsListView();
     private slots:
         void loadingImage();
         void startFBAuth();
-        void showAuthPage(bool);
+        void finishedLoadingFBAuthPage(bool);
         void  urlChanged(QUrl);
         void phoneContactClicked(QModelIndex);
         void fbFriendClicked(QModelIndex);
 
-        void loadImage(QImage*,QString imageName);
+        void loadImage(QImage*,QString imageName,int token);
+        void gotImageName(QString,int);
+
         void sync();
+        void syncAll();
         void backToPhoneContacts();
-        void smaatoAdErrorSlot(int errorCode);
+
+        void initMainScreen();
+        QWidget* getAuthPage();
     private:
         Ui::MainWindow *ui;
 
-        QVBoxLayout* iLayout;
+
         SlidingStackedWidget* stackedWidget;
         QListView* iListView;
-        QWebView* iWebView;
+        QWebView* webView;
 
         ContactModel* contactsModel;
         FBFriendsModel* fbModel;
@@ -63,6 +65,7 @@ class MainWindow : public QMainWindow
 
         QPushButton* syncButton;
         QLabel* image ;
+        QLabel* connectionStatus;
 
         QListView* fbListView;
 
@@ -73,8 +76,11 @@ class MainWindow : public QMainWindow
         Synchronizer* synchronizer;
 
         QContactManager cm;
+        QLabel* webViewStatus;
 
-        SmaatoAdLabel* adLabel;
+        QPushButton* syncAllButton;
+        QProgressBar* syncAllProgress;
+        QStackedWidget* syncAllArea;
 };
 
 #endif // MAINWINDOW_H

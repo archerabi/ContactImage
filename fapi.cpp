@@ -12,7 +12,7 @@
 #include <QScriptValueIterator>
 
 const QString KPictureRequestUrl  = "https://graph.facebook.com/%1/picture?type=large";
-
+FApi* FApi::instance = NULL;
 
 
 FApi::FApi(QObject *parent) :
@@ -25,30 +25,35 @@ FApi::FApi(QObject *parent) :
     engine = new QScriptEngine(this);
 }
 
-void FApi::getImage(QString id,QString accessToken)
+int FApi::getImage(QString id,QString accessToken)
 {
     QString url=KPictureRequestUrl;
     url = url.arg(id);
-//          .arg(accessToken);
 
     QNetworkRequest request;
     request.setUrl(QUrl(url));
     qDebug() << "URL is " << url;
 
-    iNetManager->get(request);
+    QNetworkReply* reply = iNetManager->get(request);
     callingNow =E_IMAGE;
     emit imageLoading();
+    return (int)reply;
+}
+
+int FApi::downloadImage(QString url)
+{
+    QNetworkRequest request;
+    request.setUrl(url);
+    QNetworkReply* reply = iNetManager->get(request);
+    return (int)reply;
 }
 
 void FApi::readReply(QNetworkReply* aReply)
 {
     if(aReply->header(QNetworkRequest::LocationHeader).toString().length() >0)
     {
-        QNetworkRequest request;
-        request.setUrl(aReply->header(QNetworkRequest::LocationHeader).toString());
-
-        qDebug() << "Redirect:" << aReply->header(QNetworkRequest::LocationHeader).toString();
-        iNetManager->get(request);
+//        QString string = stripExtensionFromUrl(aReply->header(QNetworkRequest::LocationHeader).toString());
+        emit displayImageName(aReply->header(QNetworkRequest::LocationHeader).toString(),(int)aReply);
     }
     else
     {
@@ -76,20 +81,20 @@ void FApi::readReply(QNetworkReply* aReply)
             }
             string = string.right(string.length()-i-1);
 //            emit filename without the extension
-//            emit imageRecieved(image,string);
-            emit imageRecieved(image,string.left(string.length()-4));
+            emit imageRecieved(image,string.left(string.length()-4),(int)aReply);
         }
     }
 
 
 }
 
-void FApi::getFBContacts(QString accessToken)
+int FApi::getFBContacts(QString accessToken)
 {
     QNetworkRequest request;
     request.setUrl(QUrl(KGetFriendsListURL.arg(accessToken)));
-    iNetManager->get(request);
+    QNetworkReply* reply=iNetManager->get(request);
     callingNow =E_FRIENDS;
+    return (int)reply;
 }
 
 QList<Friend*>* FApi::extractFriends(QScriptValue& value)
@@ -106,7 +111,7 @@ QList<Friend*>* FApi::extractFriends(QScriptValue& value)
                  fr->setId(it.value().property("id").toString());
                  *list << fr;
              }
-
+            list->removeLast();
         }
     qDebug() << "Fetched " << list->count() << " friends";
     return list;
@@ -115,4 +120,26 @@ QList<Friend*>* FApi::extractFriends(QScriptValue& value)
 bool FApi::isConnected()
 {
 
+}
+
+FApi* FApi::Instance()
+{
+    if(!instance)
+    {
+        instance = new FApi();
+    }
+    return instance;
+}
+
+QString FApi::stripExtensionFromUrl(QString file)
+{
+    QString string = file;
+
+    int i=string.length()-1;
+    while(string.at(i)!= '/')
+    {
+        i--;
+    }
+    string = string.right(string.length()-i-1);
+    return string.left(string.length()-4);
 }

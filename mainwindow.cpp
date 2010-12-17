@@ -13,28 +13,12 @@
 
 QTM_USE_NAMESPACE
 
-
 QString K_AUTH_URL = "https://graph.facebook.com/oauth/authorize?client_id=149457911761543&redirect_uri=http://www.facebook.com/connect/login_success.html&type=user_agent&scope=user_about_me,offline_access&display=wap";
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    iLayout = new QVBoxLayout;
-    QVBoxLayout* iVLayout = new QVBoxLayout;
-        QLabel *label= new QLabel("Phone Contacts",this);
-        label->setAlignment(Qt::AlignCenter);
-        iAuthFBButton = new QPushButton("Connect Facebook Account",this);
-        iAuthFBButton->setFont(QFont("serif",6));
-        iInfoLabel = new QLabel("Facebook account not connected.",this);
-        iInfoLabel->setFont(QFont("serif",6));
-    iVLayout->addWidget(label);
-    iVLayout->addWidget(iInfoLabel);
-    iVLayout->addWidget(iAuthFBButton);
-
-    synchronizer = new Synchronizer(this);
-    synchronizer->readLinks();
-
     contactsModel =new ContactModel(this);
     contactsModel->readContacts(&cm);
     contactSortModel = new QSortFilterProxyModel(this);
@@ -42,32 +26,18 @@ MainWindow::MainWindow(QWidget *parent) :
     contactSortModel->setSourceModel(contactsModel);
     contactSortModel->sort(0);
 
-    iListView = new QListView;
-    iListView->setVerticalScrollMode(QListView::ScrollPerPixel);;
-    iListView->setModel(contactSortModel);
-
-    QsKineticScroller* scroller = new QsKineticScroller(this);
-    scroller->enableKineticScrollFor(iListView);
-
-    iLayout->addLayout(iVLayout);
-    iLayout->addWidget(iListView,7);
-    QWidget* widget=new QWidget(this);
-    widget->setLayout(iLayout);
-
-    stackedWidget = new SlidingStackedWidget(this);
-
-
-    iWebView = new QWebView(this);
-
-    stackedWidget->addWidget(widget);
-    stackedWidget->addWidget(iWebView);
+    initMainScreen();
 
     initFBFriendsListView();
+
+    synchronizer = new Synchronizer(fbModel,contactsModel,&cm,this);
+    synchronizer->readLinks();
+
     ui->setupUi(this);
 
-    connect(iWebView,SIGNAL(urlChanged(QUrl)),this,SLOT(urlChanged(QUrl)));
+    connect(webView,SIGNAL(urlChanged(QUrl)),this,SLOT(urlChanged(QUrl)));
 
-    api = new FApi(this);
+    api = FApi::Instance();
 
     QSettings settings("Trishul", "contactimage");
 //    settings.clear();
@@ -81,43 +51,20 @@ MainWindow::MainWindow(QWidget *parent) :
     {
 
     }
-
-    adLabel = new SmaatoAdLabel(this);
-    adLabel->setFixedSize(300,50);
-
-    adLabel->setAdSpaceIdAndPublisherId(65735725 , 923832245);
-    adLabel->setWidth(300);
-    adLabel->setHeight(50);
-    adLabel->setAutoGPS(true);
-    adLabel->setKeywords("facebook,friends,nokia,ovi");
-
-    adLabel->setSearchString("beyonce,ringtones,tech");
-
-    QWidget* mainwidget = new QWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout;
-    layout->addWidget(stackedWidget);
-    layout->addWidget(adLabel);
-    mainwidget->setLayout(layout);
-    setCentralWidget(mainwidget);
+    setCentralWidget(stackedWidget);
 
     connect(this->iAuthFBButton,SIGNAL(clicked()),this,SLOT(startFBAuth()));
     connect(api,SIGNAL(fbContactsFetched(QList<Friend*>*)),fbModel,SLOT(add(QList<Friend*>*)));
        connect(iListView,SIGNAL(clicked(QModelIndex)),this,SLOT(phoneContactClicked(QModelIndex)));
     msgbox = new QProgressDialog(this);
 
-    connect(api,SIGNAL(imageRecieved(QImage*,QString)),this,SLOT(loadImage(QImage*,QString)));
     connect(api,SIGNAL(imageLoading()),this,SLOT(loadingImage()));
-
-    connect(adLabel, SIGNAL(smaatoAdError(int)),
-                this, SLOT(smaatoAdErrorSlot(int)));
-
-    int requestBannerErrorCode = adLabel->requestBannerAd(SmaatoAdConstants::EAdTypeImage);
-    qDebug() << "ad error " << requestBannerErrorCode;
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete FApi::Instance();
 }
 
 void MainWindow::urlChanged(QUrl aUrl)
@@ -145,18 +92,15 @@ void MainWindow::urlChanged(QUrl aUrl)
 
 void MainWindow::startFBAuth()
 {
-        iWebView->load(K_AUTH_URL);
-    connect(iWebView,SIGNAL(loadFinished(bool)),this,SLOT(showAuthPage(bool)));
+    webViewStatus->setText("Loading Facebook.com ...");
+    stackedWidget->slideInNext();
+    connect(webView,SIGNAL(loadFinished(bool)),this,SLOT(finishedLoadingFBAuthPage(bool)));
+    webView->load(K_AUTH_URL);
 }
 
-void MainWindow::showAuthPage(bool)
+void MainWindow::finishedLoadingFBAuthPage(bool)
 {
-        stackedWidget->slideInNext();
-}
-
-void MainWindow::initPhoneContactListView()
-{
-
+    webViewStatus->setText("");
 }
 
 void MainWindow::initFBFriendsListView()
@@ -173,7 +117,6 @@ void MainWindow::initFBFriendsListView()
     fbListView = new QListView(this);
     fbListView->setMinimumSize(QSize(360,240));
     fbListView->setVerticalScrollMode(QListView::ScrollPerPixel);;
-    fbListView->setFont(QFont("serif",5));;
 
     QsKineticScroller* scroller = new QsKineticScroller(this);
     scroller->enableKineticScrollFor(fbListView);
@@ -185,13 +128,21 @@ void MainWindow::initFBFriendsListView()
     fbSortModel->sort(0);
     fbSortModel->setDynamicSortFilter(true);
 
+        QVBoxLayout* syncLayout = new QVBoxLayout;
         syncButton = new QPushButton("Sync Image",this);
         syncButton->setEnabled(false);
         syncButton->setFont(QFont("serif",6));
         syncButton->setMinimumSize(QSize(64,64));
 
+        connectionStatus = new QLabel(this);
+        connectionStatus->setWordWrap(true);
+        connectionStatus->setFont(QFont("serif",5));
+        syncLayout->addWidget(connectionStatus);
+        syncLayout->addWidget(syncButton);
+        syncLayout->setContentsMargins(5,5,5,5);
        hlayout->addWidget(image);
-       hlayout->addWidget(syncButton);
+       hlayout->addLayout(syncLayout);
+       hlayout->setContentsMargins(5,5,5,5);
 
     layout->addWidget(backButton);
     layout->addWidget(infoLabel);
@@ -205,33 +156,54 @@ void MainWindow::initFBFriendsListView()
     connect(fbListView,SIGNAL(clicked(QModelIndex)),this,SLOT(fbFriendClicked(QModelIndex)));
     connect(syncButton,SIGNAL(clicked()),this,SLOT(sync()));
     connect(backButton,SIGNAL(clicked()),this,SLOT(backToPhoneContacts()));
+    connect(syncAllButton,SIGNAL(clicked()),this,SLOT(syncAll()));
 }
 
 void MainWindow::backToPhoneContacts()
 {
     stackedWidget->slideInIdx(0);
+    syncButton->setText("Sync");
+    syncButton->setEnabled(true);
 }
 
 void MainWindow::phoneContactClicked(QModelIndex aIndex)
 {
     QSettings settings("Trishul", "contactimage");
-
     if(settings.value("access_token").toString().length() > 0)
     {
+        connect(api,SIGNAL(imageRecieved(QImage*,QString,int)),this,SLOT(loadImage(QImage*,QString,int)));
         fbListView->setModel(fbSortModel);
         stackedWidget->slideInIdx(2);
     }
 }
 
-
 void MainWindow::fbFriendClicked(QModelIndex aindex)
 {
+    connect(api,SIGNAL(displayImageName(QString,int)),this,SLOT(gotImageName(QString,int)));
     QSettings settings("Trishul", "contactimage");
     int fbIndex = fbSortModel->mapToSource(fbListView->currentIndex()).row();
-    api->getImage(fbModel->getFriendAt(fbIndex)->getId(),
+    Friend* friendPtr =fbModel->getFriendAt(fbIndex);
+    api->getImage(friendPtr->getId(),
                   settings.value("access_token").toString());
+
+    QString connectedContactName = synchronizer->getConnectedPhoneContact(friendPtr->getId());
+    if(connectedContactName.length() > 0)
+    {
+        connectionStatus->setText(friendPtr->getFirstName()+" is connected to "+connectedContactName);
+    }
+    else
+    {
+        connectionStatus->setText("");
+    }
 }
-void MainWindow::loadImage(QImage* aImage,QString imageName)
+void MainWindow::gotImageName(QString url,int)
+{
+    disconnect(api,SIGNAL(displayImageName(QString,int)),this,SLOT(gotImageName(QString,int)));
+    connect(api,SIGNAL(imageRecieved(QImage*,QString,int)),this,SLOT(loadImage(QImage*,QString,int)));
+    api->downloadImage(url);
+}
+
+void MainWindow::loadImage(QImage* aImage,QString imageName,int)
 {
     currentImageName = imageName;
     syncButton->setEnabled(true);
@@ -239,6 +211,7 @@ void MainWindow::loadImage(QImage* aImage,QString imageName)
 
     pixmap.scaled(QSize(360,200),Qt::KeepAspectRatio);
     image->setPixmap(pixmap);
+    disconnect(api,SIGNAL(imageRecieved(QImage*,QString,int)),this,SLOT(loadImage(QImage*,QString,int)));
 }
 
 void MainWindow::loadingImage()
@@ -250,24 +223,75 @@ void MainWindow::sync()
 {
     int contactindex = contactSortModel->mapToSource(iListView->currentIndex()).row();
     int fbIndex = fbSortModel->mapToSource(fbListView->currentIndex()).row();
-    QContact c = contactsModel->getContactAt(contactindex);
     if(contactindex > 0 && fbIndex > 0)
     {
-        synchronizer->setAvatar(&cm,c,image->pixmap(),currentImageName);
-        synchronizer->connectProfile(c,fbModel->getFriendAt(fbIndex)->getId());
+        synchronizer->setAvatar(contactindex,image->pixmap(),currentImageName);
+        synchronizer->connectProfile(contactindex,fbModel->getFriendAt(fbIndex)->getId());
         synchronizer->saveLinks(synchronizer->serialize());
+
         syncButton->setText("Synced");
         syncButton->setEnabled(false);
     }
-
 }
 
-void MainWindow::smaatoAdErrorSlot(int errorCode)
+void MainWindow::initMainScreen()
 {
-    qDebug() << "Errorcode " << errorCode;
-    // 42 is an acceptible response from the server to indicate no Ad was found, so don't show an alert in our example application
-    if (errorCode != 42)
-    {
-//        displayErrorNote(errorCode);
-    }
+    QVBoxLayout* layout = new QVBoxLayout;
+    QVBoxLayout* iVLayout = new QVBoxLayout;
+        QLabel *label= new QLabel("Phone Contacts",this);
+        label->setAlignment(Qt::AlignCenter);
+        iAuthFBButton = new QPushButton("Connect Facebook Account",this);
+        iAuthFBButton->setFont(QFont("serif",6));
+        iInfoLabel = new QLabel("Facebook account not connected.",this);
+        iInfoLabel->setFont(QFont("serif",6));
+    iVLayout->addWidget(label);
+    iVLayout->addWidget(iInfoLabel);
+    iVLayout->addWidget(iAuthFBButton);
+
+    iListView = new QListView;
+    iListView->setVerticalScrollMode(QListView::ScrollPerPixel);;
+    iListView->setModel(contactSortModel);
+
+    QsKineticScroller* scroller = new QsKineticScroller(this);
+    scroller->enableKineticScrollFor(iListView);
+
+    syncAllArea = new QStackedWidget(this);
+    syncAllButton = new QPushButton("Sync all connected contacts.");
+    syncAllProgress = new QProgressBar(this);
+    syncAllProgress->setRange(0,100);
+    syncAllArea->addWidget(syncAllButton);
+    syncAllArea->addWidget(syncAllProgress);
+    syncAllArea->setCurrentWidget(syncAllButton);
+    syncAllArea->setMaximumHeight(40);
+
+    layout->addLayout(iVLayout);
+    layout->addWidget(iListView,7);
+    layout->addWidget(syncAllArea);
+
+    QWidget* widget=new QWidget(this);
+    widget->setLayout(layout);
+
+    stackedWidget = new SlidingStackedWidget(this);
+    stackedWidget->addWidget(widget);
+    stackedWidget->addWidget(getAuthPage());
+}
+QWidget* MainWindow::getAuthPage()
+{
+    QVBoxLayout* layout = new QVBoxLayout;
+    webView = new QWebView(this);
+    webViewStatus = new QLabel();
+    webViewStatus->setFixedSize(360,30);
+    layout->addWidget(webView);
+    layout->addWidget(webViewStatus);
+
+    QWidget* widget = new QWidget;
+    widget->setLayout(layout);
+    return widget;
+}
+void MainWindow::syncAll()
+{
+    connect(synchronizer,SIGNAL(syncProgress(int)),syncAllProgress,SLOT(setValue(int)));
+    syncAllProgress->setValue(0);
+    syncAllArea->setCurrentWidget(syncAllProgress);
+    synchronizer->syncContactImages();
 }

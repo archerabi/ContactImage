@@ -3,22 +3,28 @@
 #include <QFile>
 #include <QDebug>
 #include <QDir>
-
+#include "fapi.h"
+#include "fbfriendsmodel.h"
+#include "contactmanager.h"
 const QChar token=';';
 const QString subToken=",";
 
 const QString KImageStorageFolder = "E:/Images/ContactImage/";
 
-Synchronizer::Synchronizer(QObject *parent) :
+Synchronizer::Synchronizer(FBFriendsModel* aFbModel,ContactModel* aContactModel,
+                           QContactManager* aContactManager,QObject *parent) :
     QObject(parent)
 {
     QDir dir(KImageStorageFolder);
     dir.mkdir(KImageStorageFolder);
-
+    fbModel = aFbModel;
+    contactModel = aContactModel;
+    cm = aContactManager;
 }
 
-void Synchronizer::connectProfile(QContact contact,QString fbFriendId)
+void Synchronizer::connectProfile(int contactIndex,QString fbFriendId)
 {
+    QContact contact = contactModel->getContactAt(contactIndex);
     QContactName name=contact.detail(QContactName::DefinitionName);
     if(name.firstName().length() > 0)
         profileMap.insert(name.firstName() + " " + name.lastName() ,fbFriendId);
@@ -26,15 +32,16 @@ void Synchronizer::connectProfile(QContact contact,QString fbFriendId)
         profileMap.insert(name.lastName() ,fbFriendId);
 }
 
-void Synchronizer::setAvatar(QContactManager* cm,QContact aContact,const QPixmap* pic,QString imageName)
+void Synchronizer::setAvatar(int contactIndex,const QPixmap* pic,QString imageName)
 {
-     QFile file(KImageStorageFolder+imageName);
-     file.open(QIODevice::WriteOnly);
-     pic->save(&file,"JPG");
-     file.close();
+    QFile file(KImageStorageFolder+imageName);
+    file.open(QIODevice::WriteOnly);
+    pic->save(&file,"JPG");
+    file.close();
 
-    QContact contact = cm->compatibleContact(aContact);
+    QContact contact = contactModel->getContactAt(contactIndex);
 
+//    QContact contact = cm->compatibleContact(aContact);
     QContactAvatar av = contact.detail(QContactAvatar::DefinitionName);
     av.setImageUrl(QUrl(KImageStorageFolder+imageName));
     qDebug() << "contact.savedetail" << contact.saveDetail(&av);
@@ -45,7 +52,7 @@ void Synchronizer::setAvatar(QContactManager* cm,QContact aContact,const QPixmap
     qDebug() << "contact.savedetail" << contact.saveDetail(&t);
 
     qDebug() << "cm.savecontact" << cm->saveContact(&contact);
-     qDebug() << cm->error();
+    qDebug() << cm->error();
 }
 
 QString Synchronizer::serialize()
@@ -96,4 +103,84 @@ void Synchronizer::readLinks()
             prevTokenIndex=ptr;
         }
     }
+}
+
+void Synchronizer::syncContactImages()
+{
+    QMapIterator<QString, QString> i(profileMap);
+    synced=0;
+    connect(FApi::Instance(),SIGNAL(imageRecieved(QImage*,QString,int)),this,SLOT(loadImage(QImage*,QString,int)));
+    connect(FApi::Instance(),SIGNAL(displayImageName(QString,int)),this,SLOT(gotImageName(QString,int)));
+    while (i.hasNext())
+    {
+        i.next();
+        int token = FApi::Instance()->getImage(i.value(),"");
+        replyMap.insert(token,i.key());
+    }
+}
+
+void Synchronizer::loadImage(QImage*image,QString string,int token)
+{
+    QString contactName = replyMap.value(token);
+    int i=0;
+    foreach(QContact contact,contactModel->getContacts())
+    {
+        QContactName name=contact.detail(QContactName::DefinitionName);
+        QString namestr;
+        if(name.firstName().length() > 0)
+            namestr = name.firstName() + " " + name.lastName() ;
+        else
+            namestr = name.lastName() ;
+        if(namestr.contains(contactName))
+        {
+            QPixmap p = QPixmap::fromImage(*image);
+            setAvatar(i,&p,string);
+            synced++;
+            emit syncProgress(100 * synced/profileMap.count());
+            return;
+        }
+        i++;
+    }
+
+}
+
+void Synchronizer::gotImageName(QString imageName,int aToken)
+{
+    if(QFile::exists(KImageStorageFolder+stripExtensionFromUrl(imageName)))
+    {
+        qDebug() << replyMap.value(aToken) << " " << "Available";
+        synced++;
+        emit syncProgress(100 * synced/profileMap.count());
+    }
+    else
+    {
+        qDebug() << replyMap.value(aToken) << " " << "Not Available";
+        int token = FApi::Instance()->downloadImage(imageName);
+        replyMap.insert(token,replyMap.value(aToken));
+    }
+}
+
+QString Synchronizer::stripExtensionFromUrl(QString file)
+{
+    QString string = file;
+
+    int i=string.length()-1;
+    while(string.at(i)!= '/')
+    {
+        i--;
+    }
+    string = string.right(string.length()-i-1);
+    return string.left(string.length()-4);
+}
+
+QString Synchronizer::getConnectedPhoneContact(QString fbFriendId)
+{
+    QMapIterator<QString, QString> i(profileMap);
+    while (i.hasNext())
+    {
+        i.next();
+        if(QString::compare(i.value(),fbFriendId) == 0)
+            return i.key();
+    }
+    return "";
 }

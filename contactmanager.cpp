@@ -48,3 +48,7 @@ QContact ContactModel::getContactAt(int index)
         return QContact();
     return contactList->at(index);
 }
+QList<QContact> ContactModel::getContacts()
+{
+    return *contactList;
+}

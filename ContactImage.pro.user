@@ -2,7 +2,7 @@
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
-  <value type="int">1</value>
+  <value type="int">0</value>
  </data>
  <data>
   <variable>ProjectExplorer.Project.EditorSettings</variable>
@@ -231,7 +231,7 @@
     <value key="ProjectExplorer.ProjectConfiguration.Id" type="QString">Qt4ProjectManager.S60DeviceRunConfiguration</value>
     <valuelist key="Qt4ProjectManager.S60DeviceRunConfiguration.CommandLineArguments" type="QVariantList"/>
     <value key="Qt4ProjectManager.S60DeviceRunConfiguration.ProFile" type="QString">ContactImage.pro</value>
-    <value key="Qt4ProjectManager.S60DeviceRunConfiguration.SerialPortName" type="QString"></value>
+    <value key="Qt4ProjectManager.S60DeviceRunConfiguration.SerialPortName" type="QString">COM8</value>
    </valuemap>
    <value key="ProjectExplorer.Target.RunConfigurationCount" type="int">1</value>
   </valuemap>
