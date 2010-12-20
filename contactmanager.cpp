@@ -1,7 +1,5 @@
 #include "contactmanager.h"
 
-
-
 ContactModel::ContactModel(QObject *parent) :
     QAbstractListModel(parent)
 {

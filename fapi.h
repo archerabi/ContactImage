@@ -23,9 +23,11 @@ class FApi : public QObject
         void imageRecieved(QImage*,QString,int Token);
         void imageLoading();
         void displayImageName(QString,int);
+        void invalidAuthToken();
     public slots:
         void readReply(QNetworkReply*);
         int downloadImage(QString url);
+
     private:
         QString stripExtensionFromUrl(QString);
         explicit FApi(QObject *parent = 0);

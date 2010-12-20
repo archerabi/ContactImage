@@ -6,14 +6,15 @@
 #include "fapi.h"
 #include "fbfriendsmodel.h"
 #include "contactmanager.h"
+
 const QChar token=';';
 const QString subToken=",";
 
-const QString KImageStorageFolder = "E:/Images/ContactImage/";
+const QString KImageStorageFolder = "E:/Images/RGBA/";
 
 Synchronizer::Synchronizer(FBFriendsModel* aFbModel,ContactModel* aContactModel,
                            QContactManager* aContactManager,QObject *parent) :
-    QObject(parent)
+    QThread(parent)
 {
     QDir dir(KImageStorageFolder);
     dir.mkdir(KImageStorageFolder);
@@ -40,18 +41,19 @@ void Synchronizer::setAvatar(int contactIndex,const QPixmap* pic,QString imageNa
     file.close();
 
     QContact contact = contactModel->getContactAt(contactIndex);
-
-//    QContact contact = cm->compatibleContact(aContact);
+    qDebug()<<"Saving avatar for "<<
+            ((QContactName)(contact.detail(QContactName::DefinitionName))).firstName()<< " "
+            << ((QContactName)(contact.detail(QContactName::DefinitionName))).lastName();
     QContactAvatar av = contact.detail(QContactAvatar::DefinitionName);
     av.setImageUrl(QUrl(KImageStorageFolder+imageName));
-    qDebug() << "contact.savedetail" << contact.saveDetail(&av);
+    contact.saveDetail(&av);
 
     QContactThumbnail t = contact.detail(QContactThumbnail::DefinitionName);
     pic->scaled(QSize(80,80),Qt::KeepAspectRatio,Qt::SmoothTransformation);
     t.setThumbnail(pic->toImage());
-    qDebug() << "contact.savedetail" << contact.saveDetail(&t);
+    contact.saveDetail(&t);
 
-    qDebug() << "cm.savecontact" << cm->saveContact(&contact);
+    cm->saveContact(&contact);
     qDebug() << cm->error();
 }
 
@@ -107,16 +109,13 @@ void Synchronizer::readLinks()
 
 void Synchronizer::syncContactImages()
 {
-    QMapIterator<QString, QString> i(profileMap);
     synced=0;
+    if(profileMap.count()==0)
+        return;
+    nextptr=0;
     connect(FApi::Instance(),SIGNAL(imageRecieved(QImage*,QString,int)),this,SLOT(loadImage(QImage*,QString,int)));
     connect(FApi::Instance(),SIGNAL(displayImageName(QString,int)),this,SLOT(gotImageName(QString,int)));
-    while (i.hasNext())
-    {
-        i.next();
-        int token = FApi::Instance()->getImage(i.value(),"");
-        replyMap.insert(token,i.key());
-    }
+    downloadNextImage();
 }
 
 void Synchronizer::loadImage(QImage*image,QString string,int token)
@@ -137,20 +136,23 @@ void Synchronizer::loadImage(QImage*image,QString string,int token)
             setAvatar(i,&p,string);
             synced++;
             emit syncProgress(100 * synced/profileMap.count());
+            downloadNextImage();
             return;
         }
         i++;
     }
-
+    downloadNextImage();
 }
 
 void Synchronizer::gotImageName(QString imageName,int aToken)
 {
+    nextptr++;
     if(QFile::exists(KImageStorageFolder+stripExtensionFromUrl(imageName)))
     {
         qDebug() << replyMap.value(aToken) << " " << "Available";
         synced++;
         emit syncProgress(100 * synced/profileMap.count());
+        downloadNextImage();
     }
     else
     {
@@ -183,4 +185,53 @@ QString Synchronizer::getConnectedPhoneContact(QString fbFriendId)
             return i.key();
     }
     return "";
+}
+
+int Synchronizer::getNumberOfConnectedContacts()
+{
+    return profileMap.count();
+}
+
+void Synchronizer::downloadNextImage()
+{
+    QMapIterator<QString, QString> i(profileMap);
+    int temp=-1;
+    while(i.hasNext())
+    {
+        i.next();
+        temp++;
+        if(temp == nextptr)
+        {
+            int token = FApi::Instance()->getImage(i.value(),"");
+            replyMap.insert(token,i.key());
+            qDebug()<<"Downloading image for "<<i.key();
+            return;
+        }
+    }
+}
+
+void Synchronizer::autoConnect()
+{
+    start();
+}
+
+void Synchronizer::run()
+{
+    int contactIndex=0;
+    foreach(QContact contact,contactModel->getContacts())
+    {
+        QString name = ((QContactName)contact.detail(QContactName::DefinitionName)).firstName() + " " +
+                       ((QContactName)contact.detail(QContactName::DefinitionName)).lastName();
+        foreach(Friend* f,fbModel->getFriends())
+        {
+            QString fbName = f->getFirstName() + " " + f->getLastName();
+            if( name.contains(fbName,Qt::CaseInsensitive) || fbName.contains(name,Qt::CaseInsensitive))
+            {
+                connectProfile(contactIndex,f->getId());
+                break;
+            }
+        }
+        contactIndex++;
+    }
+    qDebug()<< "Went Through " <<contactIndex ;
 }

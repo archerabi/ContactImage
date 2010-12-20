@@ -3,18 +3,18 @@
 FBFriendsModel::FBFriendsModel(QObject *parent) :
     QAbstractListModel(parent)
 {
-    iFriendList = new QList<Friend*>();
+    friendList = new QList<Friend*>();
 }
 
 
 int FBFriendsModel::rowCount ( const QModelIndex & parent  ) const
 {
-    return iFriendList->count();
+    return friendList->count();
 }
 
 QVariant FBFriendsModel::data ( const QModelIndex & index, int role ) const
 {
-    Friend* fr = iFriendList->at(index.row());
+    Friend* fr = friendList->at(index.row());
 
     switch(role)
     {
@@ -29,18 +29,23 @@ void FBFriendsModel::add(QList<Friend*>* list)
 {
 
    int i=0;
-   emit beginInsertRows(QModelIndex(),iFriendList->count(),
-                        iFriendList->count()+list->count()-1);
+   emit beginInsertRows(QModelIndex(),friendList->count(),
+                        friendList->count()+list->count()-1);
    foreach(Friend* f,*list)
     {
-        iFriendList->append(f);
+        friendList->append(f);
     }
    emit endInsertRows();
 }
 
 Friend* FBFriendsModel::getFriendAt(int index)
 {
-    if(index > iFriendList->count())
+    if(index > friendList->count())
         return NULL;
-    return iFriendList->at(index);
+    return friendList->at(index);
+}
+
+QList<Friend*> FBFriendsModel::getFriends()
+{
+    return *friendList;
 }

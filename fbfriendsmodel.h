@@ -13,13 +13,13 @@ class FBFriendsModel : public QAbstractListModel
         QVariant data ( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 
         Friend* getFriendAt(int);
-
+        QList<Friend*> getFriends();
     signals:
 
     public slots:
           void add(QList<Friend*>* list);
     private:
-        QList<Friend*>* iFriendList;
+        QList<Friend*>* friendList;
 };
 
 #endif // FBFRIENDSMODEL_H

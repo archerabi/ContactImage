@@ -20,6 +20,7 @@ class ContactModel : public QAbstractListModel
         QVariant data ( const QModelIndex & index, int role = Qt::DisplayRole ) const;
         QContact getContactAt(int index);
         QList<QContact> getContacts();
+
     signals:
 
     public slots:

@@ -14,7 +14,6 @@
 const QString KPictureRequestUrl  = "https://graph.facebook.com/%1/picture?type=large";
 FApi* FApi::instance = NULL;
 
-
 FApi::FApi(QObject *parent) :
     QObject(parent)
 {
@@ -61,16 +60,22 @@ void FApi::readReply(QNetworkReply* aReply)
         {
             QString reply = aReply->readAll();
             QScriptValue val = engine->evaluate("(" + reply + ")" );
-            QList<Friend*>* list = extractFriends(val);
 
-            emit fbContactsFetched(list);
+            if(val.property("error").isObject())
+            {
+                emit invalidAuthToken();
+            }
+            else
+            {
+                QList<Friend*>* list = extractFriends(val);
+                emit fbContactsFetched(list);
+            }
+
         }
         else
         {
             QByteArray array = aReply->readAll();
-            qDebug() << array;
             image->loadFromData(array);
-
 
             QString string = aReply->url().toString();
 
@@ -85,7 +90,10 @@ void FApi::readReply(QNetworkReply* aReply)
         }
     }
 
-
+    if(aReply->error() != QNetworkReply::NoError)
+    {
+        qDebug() << "Error "<<aReply->errorString();
+    }
 }
 
 int FApi::getFBContacts(QString accessToken)

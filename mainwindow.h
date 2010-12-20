@@ -13,7 +13,9 @@
 #include "fbfriendsmodel.h"
 #include "synchronizer.h"
 #include <QSortFilterProxyModel>
-
+//#include "SmaatoAdSDK/smaatoadlabel.h"
+#include "InnerActiveAd/InnerActiveAdModule.h"
+#include "InnerActiveAd/InnerActiveAdWidget.h"
 class FApi;
 namespace Ui {
     class MainWindow;
@@ -46,18 +48,26 @@ class MainWindow : public QMainWindow
 
         void initMainScreen();
         QWidget* getAuthPage();
+        void quit();
+        void adAvailable();
+        void adderror(QString);
+
+        void autoSyncProgress(int);
+        void sort();
+        void filter();
+
+        void showFullList();
     private:
         Ui::MainWindow *ui;
 
-
         SlidingStackedWidget* stackedWidget;
-        QListView* iListView;
+        QListView* contactListView;
         QWebView* webView;
 
         ContactModel* contactsModel;
         FBFriendsModel* fbModel;
 
-        QLabel* iInfoLabel;
+        QLabel* infoLabel;
         QPushButton* iAuthFBButton;
 
         QProgressDialog* msgbox;
@@ -81,6 +91,12 @@ class MainWindow : public QMainWindow
         QPushButton* syncAllButton;
         QProgressBar* syncAllProgress;
         QStackedWidget* syncAllArea;
+
+        QPushButton* exitButton;
+        QPushButton* showFullListButton;
+//        SmaatoAdLabel* adLabel;
+        InnerActiveAdModule* adModule;
+        InnerActiveAdWidget* adWidget;
 };
 
 #endif // MAINWINDOW_H
