@@ -28,7 +28,8 @@ SOURCES += main.cpp\
     fbfriendsmodel.cpp \
     scrollingComponents/SignalGuard/SignalGuard.cpp \
     scrollingComponents/QsWidgets/QsKineticScroller.cpp \
-    synchronizer.cpp
+    synchronizer.cpp \
+    customdelegate.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -39,7 +40,8 @@ HEADERS  += mainwindow.h \
     fbfriendsmodel.h \
     scrollingComponents/QsWidgets/QsKineticScroller.h \
     scrollingComponents/SignalGuard/SignalGuard.h \
-    synchronizer.h
+    synchronizer.h \
+    customdelegate.h
 
 
 FORMS    += mainwindow.ui

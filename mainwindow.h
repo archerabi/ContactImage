@@ -13,7 +13,7 @@
 #include "fbfriendsmodel.h"
 #include "synchronizer.h"
 #include <QSortFilterProxyModel>
-//#include "SmaatoAdSDK/smaatoadlabel.h"
+
 #include "InnerActiveAd/InnerActiveAdModule.h"
 #include "InnerActiveAd/InnerActiveAdWidget.h"
 class FApi;
@@ -77,6 +77,7 @@ class MainWindow : public QMainWindow
         QLabel* image ;
         QLabel* connectionStatus;
 
+        QLabel* fbListStatusLabel;
         QListView* fbListView;
 
         QSortFilterProxyModel* contactSortModel;
@@ -94,7 +95,7 @@ class MainWindow : public QMainWindow
 
         QPushButton* exitButton;
         QPushButton* showFullListButton;
-//        SmaatoAdLabel* adLabel;
+
         InnerActiveAdModule* adModule;
         InnerActiveAdWidget* adWidget;
 };

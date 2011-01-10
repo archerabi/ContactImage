@@ -10,10 +10,52 @@
 #include <QContactSaveRequest>
 #include "fapi.h"
 #include "scrollingComponents/QsWidgets/QsKineticScroller.h"
+#include "customdelegate.h"
 
 QTM_USE_NAMESPACE
 
-QString K_AUTH_URL = "https://graph.facebook.com/oauth/authorize?client_id=149457911761543&redirect_uri=http://www.facebook.com/connect/login_success.html&type=user_agent&scope=user_about_me,offline_access&display=wap";
+const QString K_AUTH_URL = "https://graph.facebook.com/oauth/authorize?client_id=149457911761543&redirect_uri=http://www.facebook.com/connect/login_success.html&type=user_agent&scope=user_about_me,offline_access&display=wap";
+
+const QString KListViewCSS ="QListView{"
+                            "border: 2px solid grey;"
+                            "border-radius:4px;"
+                            "}";
+
+const QString KButtonCSS="QPushButton{"
+                         "border-radius: 6px;"
+                         "background: #555555;"
+                         "color: #FFFFFF;"
+                         "font-style:normal;"
+                         "}"
+                         "QPushButton:pressed{"
+                         "background: #222222;"
+                         "}";
+
+const QString KScrollBarCSS="QScrollBar:vertical {"
+                            "border-radius: 4px ;"
+                            "background: #555555;"
+                         "}"
+                        "QScrollBar::handle:vertical {"
+                            "border-radius: 4px ;"
+                            "background: #333333;"
+                        "}"
+                        "QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {"
+                            "height: 0px;"
+                            "max-height: 0px;"
+                        "}";
+const QString KLabelCSS = "QLabel{"
+                          "color:#333333;"
+                            "}";
+
+const QString KProgressCSS="QProgressBar {"
+                                "border: 2px solid grey;"
+                                "border-radius: 3px;"
+                                "text-align: center;"
+                            "}"
+
+                            "QProgressBar::chunk {"
+                                "background-color: #333333;"
+                            "}";
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -21,9 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     qDebug() <<QString("Chris Nielubowicz").contains("Chris Nielubowicz",Qt::CaseInsensitive);
     adModule = new InnerActiveAdModule(this,"Reddy_RGBA",30);
-//    adModule->setAdProtocolParameter( EIaProtocolParams_DistributionChannelPortal, QString("551"));
     adModule->setAdProtocolParameter( EIaProtocolParams_Keywords, "ovi,nokia,facebook,contacts,images");
-
+//    adModule->setAdProtocolParameter( EIaProtocolParams_DistributionChannelPortal, QString("551"));
     adWidget = adModule->createAdBanner(this,true);
 
     connect(adModule,SIGNAL(adDataReady()),this,SLOT(adAvailable()));
@@ -62,6 +103,7 @@ MainWindow::MainWindow(QWidget *parent) :
     {
 
     }
+    stackedWidget->setStyleSheet("QWidget{background-color:#FFFFFF;}");
     setCentralWidget(stackedWidget);
 
     connect(this->iAuthFBButton,SIGNAL(clicked()),this,SLOT(startFBAuth()));
@@ -72,7 +114,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(api,SIGNAL(imageLoading()),this,SLOT(loadingImage()));
     connect(showFullListButton,SIGNAL(clicked()),this,SLOT(showFullList()));
-//    adLabel->requestBannerAd(SmaatoAdConstants::EAdTypeImage);
+
 }
 
 MainWindow::~MainWindow()
@@ -123,14 +165,25 @@ void MainWindow::initFBFriendsListView()
     QHBoxLayout* hlayout = new QHBoxLayout;
 
     QPushButton* backButton = new QPushButton("Back",this);
-    QLabel* infoLabel = new QLabel("Facebooks Friends",this);
+    backButton->setStyleSheet(KButtonCSS);
+    backButton->setFixedSize(60,40);
+    fbListStatusLabel = new QLabel("Facebooks Friends",this);
+    fbListStatusLabel->setAlignment(Qt::AlignCenter);
+    fbListStatusLabel->setStyleSheet(KLabelCSS);
     image = new QLabel(this);
 
     QPixmap* p = new QPixmap(":/resources/default.jpg");
     image->setPixmap(*p);
     fbListView = new QListView(this);
-    fbListView->setMinimumSize(QSize(360,240));
+    fbListView->setMinimumHeight(240);
     fbListView->setVerticalScrollMode(QListView::ScrollPerPixel);;
+    fbListView->horizontalScrollBar()->setVisible(false);
+    fbListView->verticalScrollBar()->setStyleSheet(KScrollBarCSS);
+//    fbListView->setSelectionMode(QAbstractItemView::NoSelection);
+
+    CustomDelegate* delegate = new CustomDelegate(this);
+    fbListView->setItemDelegate(delegate);
+    fbListView->setStyleSheet(KListViewCSS);
 
     QsKineticScroller* scroller = new QsKineticScroller(this);
     scroller->enableKineticScrollFor(fbListView);
@@ -142,16 +195,20 @@ void MainWindow::initFBFriendsListView()
 
         QVBoxLayout* syncLayout = new QVBoxLayout;
         syncButton = new QPushButton("Sync Image",this);
+        syncButton->setStyleSheet(KButtonCSS);
         syncButton->setEnabled(false);
         syncButton->setFont(QFont("serif",6));
         syncButton->setMinimumSize(QSize(64,64));
 
-        showFullListButton = new QPushButton("Show full list",this);
-        showFullListButton->setMaximumHeight(30);
-
+        showFullListButton = new QPushButton("Show all friends",this);
+        showFullListButton->setStyleSheet(KButtonCSS);
+        showFullListButton->setMinimumHeight(40);
+        showFullListButton->setMaximumWidth(240);
         connectionStatus = new QLabel(this);
         connectionStatus->setWordWrap(true);
         connectionStatus->setFont(QFont("serif",5));
+        connectionStatus->setStyleSheet(KLabelCSS);
+
         syncLayout->addWidget(connectionStatus);
         syncLayout->addWidget(syncButton);
         syncLayout->setContentsMargins(5,5,5,5);
@@ -160,13 +217,14 @@ void MainWindow::initFBFriendsListView()
        hlayout->setContentsMargins(5,5,5,5);
 
     layout->addWidget(backButton);
-    layout->addWidget(infoLabel);
+    layout->addWidget(fbListStatusLabel);
     layout->addWidget(fbListView);
     layout->addWidget(showFullListButton);
     layout->addLayout(hlayout);
     image->setMinimumSize(200,200);
     QWidget* widget= new QWidget(this);
     widget->setLayout(layout);
+    layout->setContentsMargins(14,5,14,5);
 
     stackedWidget->addWidget(widget);
     connect(fbListView,SIGNAL(clicked(QModelIndex)),this,SLOT(fbFriendClicked(QModelIndex)));
@@ -199,6 +257,7 @@ void MainWindow::phoneContactClicked(QModelIndex aIndex)
                                                   QRegExp::FixedString));
 
         showFullListButton->setVisible(true);
+        fbListStatusLabel->setText("Possible Matches");
         if(fbSortModel->rowCount(QModelIndex()) == 0)
         {
             fbSortModel->setFilterRegExp(QRegExp(contact.firstName(), Qt::CaseInsensitive,
@@ -211,11 +270,13 @@ void MainWindow::phoneContactClicked(QModelIndex aIndex)
                 if(contact.lastName().length() <= 1 || fbSortModel->rowCount(QModelIndex()) == 0)
                 {
                     sort();
+                    fbListStatusLabel->setText("Your Facebook Friends");
                     showFullListButton->setVisible(false);
                 }
             }
         }
 
+        syncButton->setText("Sync");
         connect(api,SIGNAL(imageRecieved(QImage*,QString,int)),this,SLOT(loadImage(QImage*,QString,int)));
         fbListView->setModel(fbSortModel);
         stackedWidget->slideInIdx(2);
@@ -224,6 +285,7 @@ void MainWindow::phoneContactClicked(QModelIndex aIndex)
 
 void MainWindow::fbFriendClicked(QModelIndex aindex)
 {
+    syncButton->setText("Downloading Image..");
     connect(api,SIGNAL(displayImageName(QString,int)),this,SLOT(gotImageName(QString,int)));
     QSettings settings("Trishul", "RGBA");
     int fbIndex = fbSortModel->mapToSource(fbListView->currentIndex()).row();
@@ -250,6 +312,7 @@ void MainWindow::gotImageName(QString url,int)
 
 void MainWindow::loadImage(QImage* aImage,QString imageName,int)
 {
+    syncButton->setText("Sync");
     currentImageName = imageName;
     syncButton->setEnabled(true);
     QPixmap pixmap =QPixmap::fromImage(*aImage);
@@ -284,48 +347,63 @@ void MainWindow::initMainScreen()
     QVBoxLayout* layout = new QVBoxLayout;
     QVBoxLayout* vLayout = new QVBoxLayout;
         QLabel *label= new QLabel("Select a Contact to Download Image",this);
+        label->setWordWrap(true);
         label->setAlignment(Qt::AlignCenter);
         label->setWordWrap(true);
+        label->setStyleSheet(KLabelCSS);
+        label->setFont(QFont("serif",6));
 
-        iAuthFBButton = new QPushButton("Connect Facebook Account",this);
+        iAuthFBButton = new QPushButton("Connect to Facebook",this);
         iAuthFBButton->setFont(QFont("serif",6));
+        iAuthFBButton->setStyleSheet(KButtonCSS);
+        iAuthFBButton->setMinimumHeight(40);
+        iAuthFBButton->setMaximumWidth(240);
         infoLabel = new QLabel("Facebook account not connected.",this);
         infoLabel->setFont(QFont("serif",6));
+        infoLabel->setWordWrap(true);
+        infoLabel->setStyleSheet(KLabelCSS);
 
-    vLayout->addWidget(label);
+
     vLayout->addWidget(infoLabel);
     vLayout->addWidget(iAuthFBButton);
+    vLayout->addWidget(label);
 
     exitButton = new QPushButton("Quit",this);
+    exitButton->setStyleSheet(KButtonCSS);
+    exitButton->setFixedSize(50,40);
     contactListView = new QListView;
     contactListView->setVerticalScrollMode(QListView::ScrollPerPixel);;
     contactListView->setModel(contactSortModel);
+//    contactListView->setSelectionMode(QAbstractItemView::NoSelection);
+
+    contactListView->horizontalScrollBar()->setVisible(false);
+    contactListView->verticalScrollBar()->setStyleSheet(KScrollBarCSS);
+
+    contactListView->setStyleSheet(KListViewCSS);
 
     QsKineticScroller* scroller = new QsKineticScroller(this);
     scroller->enableKineticScrollFor(contactListView);
+    CustomDelegate* delegate = new CustomDelegate(this);
+    contactListView->setItemDelegate(delegate);
 
     syncAllArea = new QStackedWidget(this);
     syncAllButton = new QPushButton("Sync all connected contacts.");
+    syncAllButton->setStyleSheet(KButtonCSS);
     syncAllProgress = new QProgressBar(this);
     syncAllProgress->setRange(0,100);
+    syncAllProgress->setStyleSheet(KProgressCSS);
     syncAllArea->addWidget(syncAllButton);
     syncAllArea->addWidget(syncAllProgress);
     syncAllArea->setCurrentWidget(syncAllButton);
     syncAllArea->setMaximumHeight(40);
-
-//    adLabel = new SmaatoAdLabel(this);
-//    adLabel->setAdSpaceIdAndPublisherId(65735725,923832245);
-//    adLabel->setFixedSize(360,50);
-//    adLabel->setSearchString("nokia,ovi,symbian.facebook,social,pictures");
-//    adLabel->setKeywords("nokia,ovi,symbian.facebook,social,pictures");
-//    adLabel->setAutoGPS(true);
 
     layout->addWidget(exitButton);
     layout->addLayout(vLayout);
     layout->addWidget(contactListView,7);
     layout->addWidget(syncAllArea);
     layout->addWidget(adWidget);
-
+    layout->setContentsMargins(14,5,14,5);
+    layout->setAlignment(exitButton,Qt::AlignRight);
     QWidget* widget=new QWidget(this);
     widget->setLayout(layout);
 
@@ -340,6 +418,7 @@ QWidget* MainWindow::getAuthPage()
     webView = new QWebView(this);
     webViewStatus = new QLabel();
     webViewStatus->setFixedSize(360,30);
+    webViewStatus->setStyleSheet(KLabelCSS);
     layout->addWidget(webView);
     layout->addWidget(webViewStatus);
 
@@ -350,12 +429,13 @@ QWidget* MainWindow::getAuthPage()
 void MainWindow::syncAll()
 {
 //    synchronizer->autoConnect();
-    QMessageBox msgBox;
-     msgBox.setText("This will replace existing contact images.Continue?");
-     msgBox.setStandardButtons(QMessageBox::Ok |QMessageBox::Cancel);
-     msgBox.setDefaultButton(QMessageBox::Save);
-     int ret = msgBox.exec();
-     if(ret == QDialog::Accepted)
+//    QMessageBox msgBox;
+//     msgBox.setText("This will replace existing contact images.Continue?");
+//     msgBox.setStandardButtons(QMessageBox::Ok |QMessageBox::Cancel);
+//     msgBox.setDefaultButton(QMessageBox::Save);
+//     int ret = msgBox.exec();
+
+//     if(ret == QDialog::Accepted)
      {
         connect(synchronizer,SIGNAL(syncProgress(int)),this,SLOT(autoSyncProgress(int)));
         syncAllProgress->setValue(0);

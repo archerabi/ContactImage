@@ -32,6 +32,7 @@
 #include <QTimer>
 #include <cstddef> // for NULL
 
+#include <QListView>
 // A number of mouse moves are ignored after a press to differentiate
 // it from a press & drag.
 static const int gMaxIgnoredMouseMoves = 4;
@@ -132,6 +133,12 @@ bool QsKineticScroller::eventFilter(QObject* object, QEvent* event)
          d->lastScrollBarPosition = d->scrollArea->verticalScrollBar()->value();
          if( d->isMoving ) // press while kinetic scrolling, so stop
             d->stopMotion();
+         else
+         {
+             QModelIndex i=((QListView*)d->scrollArea)->indexAt(mouseEvent->pos());
+             ((QListView*)d->scrollArea)->setCurrentIndex(i);
+         }
+
       }
       break;
    case QEvent::MouseMove:
